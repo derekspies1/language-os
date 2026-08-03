@@ -70,6 +70,24 @@ test("route falls back to mock coaching after malformed live output", async () =
   assert.equal(body.data.hints.length, 3);
 });
 
+test("route validates output from any injected provider, not only the OpenAI adapter", async () => {
+  const demo = new MockCoachingService();
+  const untrusted: CoachingService = {
+    provider: "openai",
+    model: "unvalidated-injected-service",
+    async analyzeAttempt() { return { understanding: "incomplete" } as never; },
+    evaluateRebuiltAttempt: (...args) => demo.evaluateRebuiltAttempt(...args),
+    generateStressTestQuestions: (...args) => demo.generateStressTestQuestions(...args),
+    evaluateStressTestAnswer: (...args) => demo.evaluateStressTestAnswer(...args),
+    createSessionSummary: (...args) => demo.createSessionSummary(...args),
+  };
+  const response = await createCoachHandler({ resolveService: () => ({ service: untrusted, configuredLiveProvider: true }) })(coachRequest());
+  const body = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(body.meta.provider, "mock");
+  assert.ok(body.meta.validationFailures.length > 0);
+});
+
 test("end-to-end coaching request uses an injected live provider", async () => {
   const demo = new MockCoachingService();
   const live: CoachingService = {

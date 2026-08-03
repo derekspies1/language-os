@@ -1,4 +1,4 @@
-import type { SongAnalysis, SongAnalysisRequest, SongAnalysisService } from "./contracts";
+import { SongAnalysisSchema, type SongAnalysis, type SongAnalysisRequest, type SongAnalysisService } from "./contracts";
 
 export const ORIGINAL_DEMO = {
   title: "새벽의 문",
@@ -108,7 +108,7 @@ export function createDemoSongAnalysis(input: SongAnalysisRequest): SongAnalysis
     return rich ? { lineId: line.id, originalKorean: line.text, ...rich } : genericDemoLine(line, index);
   });
   const richCount = lines.filter((line) => line.vocabulary.length > 0 || line.grammar.length > 0).length;
-  return {
+  return SongAnalysisSchema.parse({
     overview: richCount === lines.length ? "A quiet song about beginning again: dawn, breath, voice, and light turn recovery into physical images." : "A Korean-first listening session. Detailed demo analysis is available for the original in-app song; supplied text remains usable without invented claims.",
     overallTone: richCount === lines.length ? "Intimate, hopeful, and gently determined." : "Learner-directed listening mode.",
     recurringIdeas: richCount === lines.length ? ["starting again", "quiet courage", "crossing a boundary", "shared light"] : ["sound grouping", "line endings", "learner interpretation"],
@@ -117,9 +117,9 @@ export function createDemoSongAnalysis(input: SongAnalysisRequest): SongAnalysis
     stylisticFeatures: richCount === lines.length ? ["personification", "time as physical space", "casual intimate endings"] : ["Korean-first progressive reveal"],
     learningPriorities: richCount === lines.length ? ["Hear each phrase boundary before reading the meaning", "Reuse -아/어도 괜찮아 for reassurance", "Notice how images carry emotion"] : ["Record a guess before revealing any supplied translation", "Mark unstable lines", "Use a live coach for detailed analysis"],
     lines,
-    partial: richCount !== lines.length,
+    partial: false,
     omittedLineIds: [],
-  };
+  });
 }
 
 export class MockSongAnalysisService implements SongAnalysisService {
@@ -131,4 +131,3 @@ export class MockSongAnalysisService implements SongAnalysisService {
 }
 
 export const mockSongAnalyzer = new MockSongAnalysisService();
-

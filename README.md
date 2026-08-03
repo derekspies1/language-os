@@ -29,9 +29,9 @@ Paste a Korean song excerpt that you want to study, then move through five evolv
 2. Unpack segmentation, vocabulary, grammar, nuance, and sound progressively.
 3. Return to a cleaner view and hear complete meaningful units.
 4. Rebuild and reuse a small number of high-value trouble spots.
-5. Return to the song with a compact understanding map and one next-listen focus.
+5. Return to the song with a compact understanding map, one next-listen focus, and an explicit learner-logged listen.
 
-Repeat Studio also includes device-local saved sessions, an original Korean demo, printable learning sheets, marked vocabulary and grammar, learner notes, and recovery from invalid or older saved data.
+Repeat Studio also includes device-local saved sessions, an original Korean demo, printable learning sheets, marked vocabulary and grammar, learner notes, recoverable deletion, and recovery from invalid or older saved data. Song entry accepts 1–80 non-empty lines and reports invalid or overlong input instead of truncating it.
 
 ## Run locally
 
@@ -96,7 +96,7 @@ Repeat Studio adds:
 - `app/lib/song-analysis/server/openai-song-analyzer.ts` for the live provider adapter and source-line integrity checks.
 - `app/lib/song-analysis/demo.ts` for original demo material and conservative fallback.
 - `app/api/song-analysis/route.ts` for server-side validation, cancellation, live execution, and labeled fallback.
-- `app/lib/repeat-studio/session.ts` for versioned local sessions and safe stored-data recovery.
+- `app/lib/repeat-studio/session.ts` for versioned local sessions, cross-field integrity checks, version-1 migration, and safe stored-data recovery.
 - `app/components/repeat/RepeatStudio.tsx` for the full learner workflow.
 
 To add another AI provider, implement `CoachingService`, validate its outputs with the shared schemas, and update `resolveCoachingService`. The UI and API contract should not need provider-specific changes.
@@ -107,7 +107,7 @@ Song-analysis providers follow the same pattern through `SongAnalysisService` an
 
 Repeat Studio studies text supplied by the learner. It does not retrieve lyrics, scrape lyric sites, control a streaming service, download audio, or process audio.
 
-Saved Repeat Studio sessions stay in browser local storage on the current device. Stored data is versioned and validated before loading. When live analysis is configured and requested, the pasted excerpt is sent to that configured AI provider through the server route. API keys remain server-side.
+Saved Repeat Studio sessions stay in browser local storage on the current device. Stored data uses schema version 2 and is validated for both shape and internal references before loading. Valid version-1 sessions preserve their learning record during migration; malformed sessions recover only safe core fields or are ignored with a visible warning. When live analysis is configured and requested, the pasted excerpt is sent to that configured AI provider through the server route. API keys remain server-side.
 
 ## Checks
 
@@ -118,6 +118,6 @@ npm run build
 npm test
 ```
 
-`npm test` builds the production worker, verifies both main routes, validates structured coaching and song-analysis responses, checks missing configuration and fallback behavior, rejects malformed model output, and exercises saved-session validation and migration recovery.
+`npm test` builds the production worker and runs 23 tests. It verifies both main routes, validates structured coaching and song-analysis responses at adapter and route boundaries, rejects changed Korean and invented segments, checks safe partial-output normalization, missing configuration, and fallback behavior, and exercises lyric limits, saved-session integrity, version migration, and interrupted-request recovery.
 
 There is intentionally no authentication, account system, analytics, payments, or cloud persistence in this version. Expression-coach state resets on refresh; Repeat Studio sessions persist on the current device.

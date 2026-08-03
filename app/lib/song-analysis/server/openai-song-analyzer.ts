@@ -1,7 +1,7 @@
-import { ZodError } from "zod";
 import { OpenAIStructuredModelClient } from "../../coaching/server/openai-coach";
 import {
-  SongAnalysisSchema,
+  SongAnalysisShapeSchema,
+  validateSongAnalysisForRequest,
   type SongAnalysis,
   type SongAnalysisRequest,
   type SongAnalysisService,
@@ -33,31 +33,18 @@ export class OpenAISongAnalysisService implements SongAnalysisService {
   ) {}
 
   async analyzeSong(input: SongAnalysisRequest, signal?: AbortSignal): Promise<SongAnalysis> {
-    const candidate = await this.client.generate(
+    const candidate = SongAnalysisShapeSchema.parse(await this.client.generate(
       "song_analysis",
-      SongAnalysisSchema,
+      SongAnalysisShapeSchema,
       `Create a Korean-first analysis for this learner-supplied excerpt.\n\nInput (JSON):\n${JSON.stringify(input)}`,
       signal,
-    );
-    const parsed = SongAnalysisSchema.parse(candidate);
-    const inputs = new Map(input.lines.map((line) => [line.id, line.text]));
-    const seen = new Set<string>();
-
-    for (const line of parsed.lines) {
-      if (!inputs.has(line.lineId) || seen.has(line.lineId)) {
-        throw new ZodError([{ code: "custom", path: ["lines"], message: "Song analysis returned an unknown or duplicate line ID.", input: line.lineId }]);
-      }
-      if (inputs.get(line.lineId) !== line.originalKorean) {
-        throw new ZodError([{ code: "custom", path: ["lines", line.lineId, "originalKorean"], message: "Song analysis changed the supplied Korean text.", input: line.originalKorean }]);
-      }
-      seen.add(line.lineId);
-    }
-
-    const actualOmitted = input.lines.map((line) => line.id).filter((id) => !seen.has(id));
-    return SongAnalysisSchema.parse({
-      ...parsed,
-      partial: actualOmitted.length > 0,
-      omittedLineIds: actualOmitted,
+    ));
+    const analyzedIds = new Set(candidate.lines.map((line) => line.lineId));
+    const omittedLineIds = input.lines.map((line) => line.id).filter((lineId) => !analyzedIds.has(lineId));
+    return validateSongAnalysisForRequest(input, {
+      ...candidate,
+      partial: omittedLineIds.length > 0,
+      omittedLineIds,
     });
   }
 }
@@ -68,4 +55,3 @@ export function createOpenAISongAnalyzer(apiKey: string, model: string): OpenAIS
     new OpenAIStructuredModelClient(apiKey, model, SONG_ANALYSIS_SYSTEM_PROMPT),
   );
 }
-

@@ -1,6 +1,11 @@
-import { ZodError } from "zod";
+import { z, ZodError } from "zod";
 import {
   CoachRequestSchema,
+  CoachingAnalysisSchema,
+  RebuildEvaluationSchema,
+  SessionSummarySchema,
+  StressAnswerEvaluationSchema,
+  StressQuestionSchema,
   type CoachRequest,
   type CoachingService,
 } from "../../lib/coaching/contracts";
@@ -29,18 +34,21 @@ function validationFailures(error: unknown): string[] {
 async function execute(service: CoachingService, request: CoachRequest, signal: AbortSignal) {
   switch (request.action) {
     case "analyze_attempt":
-      return service.analyzeAttempt(request.context, signal);
+      return CoachingAnalysisSchema.parse(await service.analyzeAttempt(request.context, signal));
     case "evaluate_rebuild": {
       const [evaluation, stress] = await Promise.all([
         service.evaluateRebuiltAttempt(request.context, request.rebuiltAttempt, signal),
         service.generateStressTestQuestions(request.context, request.rebuiltAttempt, signal),
       ]);
-      return { evaluation, questions: stress.questions };
+      return z.object({
+        evaluation: RebuildEvaluationSchema,
+        questions: z.array(StressQuestionSchema).min(2).max(3),
+      }).parse({ evaluation, questions: stress.questions });
     }
     case "evaluate_stress":
-      return service.evaluateStressTestAnswer(request.context, request.question, request.answer, signal);
+      return StressAnswerEvaluationSchema.parse(await service.evaluateStressTestAnswer(request.context, request.question, request.answer, signal));
     case "complete_session":
-      return service.createSessionSummary(request.context, request.rebuiltAttempt, request.stressAnswers, signal);
+      return SessionSummarySchema.parse(await service.createSessionSummary(request.context, request.rebuiltAttempt, request.stressAnswers, signal));
   }
 }
 
@@ -74,7 +82,11 @@ export function createCoachHandler(options: HandlerOptions = {}) {
       if (request.signal.aborted) return new Response(null, { status: 499 });
       error = caught;
       activeService = fallback;
-      data = await execute(fallback, parsed.data, request.signal);
+      try {
+        data = await execute(fallback, parsed.data, request.signal);
+      } catch {
+        return Response.json({ error: "The coach and its safe fallback could not produce a valid response." }, { status: 502 });
+      }
     }
 
     return Response.json({

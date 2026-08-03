@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { CoachMeta, ProviderName } from "../coaching/contracts";
+import { CoachMetaSchema, type CoachMeta, type ProviderName } from "../coaching/contracts";
 
 const TinyText = z.string().trim().min(1).max(160);
 const ShortText = z.string().trim().min(1).max(600);
@@ -14,7 +14,7 @@ export const SongAnalysisRequestSchema = z.object({
   title: TinyText,
   artist: TinyText,
   albumOrSource: z.string().trim().max(240).optional(),
-  personalNotes: z.string().trim().max(2_000).optional(),
+  personalNotes: z.string().trim().max(4_000).optional(),
   lines: z.array(SongLineInputSchema).min(1).max(80),
 });
 
@@ -60,7 +60,7 @@ export const SongLineAnalysisSchema = z.object({
   reviewPriority: z.enum(["low", "medium", "high"]),
 });
 
-export const SongAnalysisSchema = z.object({
+export const SongAnalysisShapeSchema = z.object({
   overview: ShortText,
   overallTone: ShortText,
   recurringIdeas: z.array(TinyText).max(8),
@@ -71,6 +71,34 @@ export const SongAnalysisSchema = z.object({
   lines: z.array(SongLineAnalysisSchema).min(1).max(80),
   partial: z.boolean(),
   omittedLineIds: z.array(z.string().trim().min(1).max(80)).max(80),
+});
+
+export const SongAnalysisSchema = SongAnalysisShapeSchema.superRefine((analysis, context) => {
+  const lineIds = new Set<string>();
+  const vocabularyIds = new Set<string>();
+  const grammarIds = new Set<string>();
+  for (const [lineIndex, line] of analysis.lines.entries()) {
+    if (lineIds.has(line.lineId)) {
+      context.addIssue({ code: "custom", path: ["lines", lineIndex, "lineId"], message: "Line IDs must be unique." });
+    }
+    lineIds.add(line.lineId);
+    for (const [itemIndex, item] of line.vocabulary.entries()) {
+      if (vocabularyIds.has(item.id)) context.addIssue({ code: "custom", path: ["lines", lineIndex, "vocabulary", itemIndex, "id"], message: "Vocabulary IDs must be unique." });
+      vocabularyIds.add(item.id);
+    }
+    for (const [itemIndex, item] of line.grammar.entries()) {
+      if (grammarIds.has(item.id)) context.addIssue({ code: "custom", path: ["lines", lineIndex, "grammar", itemIndex, "id"], message: "Grammar IDs must be unique." });
+      grammarIds.add(item.id);
+    }
+  }
+  const omitted = new Set<string>();
+  for (const [index, lineId] of analysis.omittedLineIds.entries()) {
+    if (omitted.has(lineId) || lineIds.has(lineId)) context.addIssue({ code: "custom", path: ["omittedLineIds", index], message: "Omitted line IDs must be unique and cannot also be analyzed." });
+    omitted.add(lineId);
+  }
+  if (analysis.partial !== (analysis.omittedLineIds.length > 0)) {
+    context.addIssue({ code: "custom", path: ["partial"], message: "Partial must reflect whether line IDs were omitted." });
+  }
 });
 
 export type SongLineInput = z.infer<typeof SongLineInputSchema>;
@@ -88,3 +116,33 @@ export interface SongAnalysisService {
 }
 
 export type SongAnalysisResponse = { data: SongAnalysis; meta: CoachMeta };
+export const SongAnalysisResponseSchema = z.object({ data: SongAnalysisSchema, meta: CoachMetaSchema });
+
+export function validateSongAnalysisForRequest(input: SongAnalysisRequest, candidate: unknown): SongAnalysis {
+  return SongAnalysisSchema.superRefine((analysis, context) => {
+    const inputs = new Map(input.lines.map((line) => [line.id, line.text]));
+    const analyzedIds = new Set<string>();
+    analysis.lines.forEach((line, lineIndex) => {
+      const original = inputs.get(line.lineId);
+      if (!original) {
+        context.addIssue({ code: "custom", path: ["lines", lineIndex, "lineId"], message: "Analysis cannot refer to an unknown input line." });
+        return;
+      }
+      if (original !== line.originalKorean) {
+        context.addIssue({ code: "custom", path: ["lines", lineIndex, "originalKorean"], message: "Analysis cannot change learner-supplied Korean." });
+      }
+      const normalizedOriginal = original.replace(/\s+/g, "");
+      line.segments.forEach((segment, segmentIndex) => {
+        if (!normalizedOriginal.includes(segment.text.replace(/\s+/g, ""))) {
+          context.addIssue({ code: "custom", path: ["lines", lineIndex, "segments", segmentIndex, "text"], message: "Analyzed segments must come from the supplied Korean line." });
+        }
+      });
+      analyzedIds.add(line.lineId);
+    });
+    const expectedOmissions = input.lines.map((line) => line.id).filter((lineId) => !analyzedIds.has(lineId)).sort();
+    const actualOmissions = [...analysis.omittedLineIds].sort();
+    if (expectedOmissions.join("\u0000") !== actualOmissions.join("\u0000")) {
+      context.addIssue({ code: "custom", path: ["omittedLineIds"], message: "Omitted line IDs must exactly account for supplied lines without analysis." });
+    }
+  }).parse(candidate);
+}

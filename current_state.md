@@ -42,6 +42,7 @@ The following behavior was confirmed in the repository before this task began:
 - keyboard line movement with J/K and the arrow keys when focus is not inside a form control;
 - focused reconstruction, meaning recall, and personal reuse activities for up to three high-value trouble spots;
 - Full Song Breakdown, Repeat Focus, Phrase Treasure, and After-Listening sheets with browser print styling;
+- learner-logged completed listens that are separate from navigation between study modes;
 - loading, cancellation, retry, partial-analysis, no-analysis, storage-recovery, missing-session, and empty-library states;
 - explicit copyright, privacy, and provider boundaries in session creation and the Repeat Studio home.
 
@@ -51,9 +52,9 @@ The feature does not control music, retrieve lyrics, scrape websites, download a
 
 `app/lib/song-analysis/contracts.ts` defines validated song-level, line-level, segment, vocabulary, and grammar contracts plus a provider-independent `SongAnalysisService`.
 
-`app/lib/song-analysis/server/openai-song-analyzer.ts` uses the existing structured-model client with a song-specific system prompt. It validates the structured response, rejects unknown or duplicate line IDs, rejects changed source text, and computes missing line IDs instead of trusting a provider's partial-output claim.
+`app/lib/song-analysis/server/openai-song-analyzer.ts` uses the existing structured-model client with a song-specific system prompt. Shared request-specific validation rejects unknown or duplicate line IDs, changed source text, invented segment text, stale omissions, and inconsistent partial claims.
 
-`app/api/song-analysis/route.ts` keeps credentials server-side, validates every request, supports request cancellation, uses the configured live analyzer when available, and falls back to clearly labeled deterministic demo analysis after network, provider, or validation failure.
+`app/api/song-analysis/route.ts` keeps credentials server-side, validates every request and every service response, supports request cancellation, uses the configured live analyzer when available, and falls back to clearly labeled deterministic demo analysis after network, provider, or validation failure. The client parses the response envelope again before writing it into session state.
 
 `app/lib/song-analysis/demo.ts` contains the original Korean demo and its analysis. For arbitrary learner-supplied text in demo mode, it deliberately does not invent detailed meanings, vocabulary, or grammar. Supplied translations can be shown, and the listening workflow remains usable.
 
@@ -65,6 +66,23 @@ The feature does not control music, retrieve lyrics, scrape websites, download a
 - `public/og.png` is an original product-specific social preview card for Repeat Studio.
 - The root expression coach now links to Repeat Studio, and Repeat Studio links back.
 
+### Corrections from the senior review
+
+The 2026-08-03 senior product and code review corrected several behaviors that had built successfully but were not reliable enough:
+
+- changing modes no longer increments a misleading “repeat” count; a completed listen is logged only when the learner explicitly records it in Return mode;
+- all five understanding states can now be recorded after initial contact, including Reusable, while preserving the learner's baseline;
+- lyric entry rejects more than 80 non-empty lines and overlong lines visibly instead of silently truncating text;
+- persisted session schema version 2 adds cross-field integrity checks for lyric lines, progress, analysis source text, omissions, marks, rebuild attempts, phrase reuse, and provider metadata;
+- version-1 sessions retain valid learning data during migration, while old navigation-derived pass counts reset instead of becoming listening history;
+- an analysis left in `loading` during a page close reloads as a retryable cancellation instead of permanent loading;
+- API routes validate output even when a provider service is injected or replaced, and the browser validates response data and metadata before saving it;
+- request-specific song validation rejects changed Korean, unknown or duplicate IDs, invented segments, inconsistent partial output, and stale omissions;
+- deletion now has undo, reconstruction saves provide feedback, and Return mode opens the promised After-Listening Summary directly;
+- Phrase Treasure selects units containing high-reuse or learner-marked vocabulary and gives every phrase its own sentence field;
+- Full Song Breakdown now includes the song overview and close structural meaning;
+- understanding-map targets are larger and horizontally resilient, and the 820px breakpoint gives iPad portrait a full-width listening surface.
+
 ## Current pages and workflows
 
 ### `/` — Expression coach
@@ -73,9 +91,9 @@ The learner chooses a real expressive mission and target language, makes an unas
 
 ### `/repeat` — K-pop Repeat Studio
 
-The learner can open the original demo, create a session from a pasted excerpt, resume a saved local session, or delete a saved session.
+The learner can open the original demo, create a session from a pasted excerpt, resume a saved local session, or delete a saved session with immediate undo.
 
-Creating a session immediately requests analysis. The learner can continue recording guesses while analysis loads, cancel without losing the session, or retry. Each later pass changes the study action rather than replaying the same screen. The final pass restores a calm Korean-first lyric view and one suggested focus for the next listen.
+Creating a session immediately requests analysis. The learner can continue recording guesses while analysis loads, cancel without losing the session, or retry. Each later pass changes the study action rather than replaying the same screen. Later passes can update current understanding without erasing the initial state. The final pass restores a calm Korean-first lyric view, one suggested focus, and an explicit control for logging a completed listen.
 
 ## Architecture
 
@@ -120,14 +138,16 @@ If a configured live request fails or returns invalid output, that request falls
 
 ## Persistence and migration behavior
 
-Repeat Studio stores one versioned envelope under `language-os.repeat-studio.sessions` in browser local storage. Stored data includes song metadata and text, analysis and provider metadata, pass count, selected line, initial and current understanding, interpretations, reveal state, marks, notes, rebuild attempts, reuse sentences, and timestamps.
+Repeat Studio stores one versioned envelope under `language-os.repeat-studio.sessions` in browser local storage. Stored data includes song metadata and text, analysis and provider metadata, learner-logged listen count, selected line, initial and current understanding, interpretations, reveal state, marks, notes, rebuild attempts, reuse sentences, and timestamps.
 
 On load:
 
-1. the full envelope and every session are validated;
-2. valid version-1 data loads normally;
-3. recognizable older array or envelope shapes recover only safe core song fields and regenerate valid progress state;
-4. invalid or unsupported data is ignored with a visible warning instead of crashing the app.
+1. every session is validated for both shape and relationships among lyrics, analysis, progress, marks, activities, and provider metadata;
+2. valid version-2 data loads normally;
+3. valid version-1 data preserves its learning record while migrating, with old navigation-derived pass counts reset to zero;
+4. interrupted loading state becomes a retryable cancellation;
+5. recognizable older array or envelope shapes recover only safe core song fields and regenerate valid progress state;
+6. invalid or unsupported sessions are ignored with a visible warning instead of crashing the app.
 
 Sessions stay on the current browser/device. There is no cloud synchronization, account ownership, or server persistence.
 
@@ -165,9 +185,11 @@ Verified on 2026-08-03:
 - `npx tsc --noEmit` — passed
 - `npm run lint` — passed
 - `npm run build` — passed
-- `npm test` — passed, 14 tests
+- `npm test` — passed, 23 tests
 
 The test command performs another production build before running tests.
+
+A manual browser walkthrough also passed in demo mode: session resume after reload, recoverable deletion, 81-line rejection, guess preservation, independent meaning/structure reveal, later-state improvement through Reusable, vocabulary and grammar marking, reconstruction feedback, reuse persistence, learner-logged listens, direct summary navigation, all four learning sheets, and browser-console inspection. Responsive checks at 1024×768 and 768×1024 found no page-level horizontal overflow; iPad portrait uses the compact pass rail and 40px understanding-map targets.
 
 ## Known limitations
 
@@ -176,6 +198,7 @@ The test command performs another production build before running tests.
 - There is no editing flow for song metadata or lyrics after session creation. A changed excerpt currently requires a new session.
 - Demo analysis is intentionally rich only for the original in-app material. It cannot provide a trustworthy linguistic analysis of arbitrary pasted lyrics.
 - Rebuild activities use lightweight exact-phrase checks or learner-recorded completion, not AI evaluation.
+- Phrase Treasure selection is a deterministic vocabulary-to-segment heuristic; it does not yet let the learner manually promote an arbitrary phrase.
 - Understanding states are learner-reported and contextual, not scientific measurements.
 - The live song prompt and schemas are tested with injected/failing services, but no real provider request was made during this task because no credential-dependent verification was claimed.
 - The browser print views are styled and production-built, but printer-specific pagination varies by browser.
@@ -187,7 +210,7 @@ The test command performs another production build before running tests.
 - `RepeatStudio.tsx` is a large vertical-slice component. Once behavior stabilizes, extracting mode and sheet components into feature-local modules would improve maintainability without changing the product.
 - Local persistence writes the validated session envelope after every state change. Debouncing writes may help for very large session libraries.
 - Stored analyses do not yet have a separate prompt/schema revision identifier for selective re-analysis.
-- There is no browser-level interaction test for local storage, keyboard navigation, or print switching; current coverage is contract, route, persistence-logic, build, and server-rendering focused.
+- There is no committed automated browser test for local storage, keyboard navigation, responsive layout, or print switching; those paths were manually exercised in this review but remain regression risks.
 - D1 and Drizzle starter files may confuse future contributors because current product persistence is intentionally local.
 
 ## Next logical product opportunities
@@ -209,4 +232,3 @@ The test command performs another production build before running tests.
 - conversational coaching grounded in marked phrases.
 
 These are possibilities only. No streaming integration, scraping, lyric retrieval, or audio processing is planned by implication.
-

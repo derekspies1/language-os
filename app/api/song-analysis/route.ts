@@ -1,6 +1,6 @@
 import { ZodError } from "zod";
 import type { SongAnalysisService } from "../../lib/song-analysis/contracts";
-import { SongAnalysisRequestSchema } from "../../lib/song-analysis/contracts";
+import { SongAnalysisRequestSchema, validateSongAnalysisForRequest } from "../../lib/song-analysis/contracts";
 import { mockSongAnalyzer } from "../../lib/song-analysis/demo";
 import {
   resolveSongAnalysisService,
@@ -40,12 +40,16 @@ export function createSongAnalysisHandler(options: HandlerOptions = {}) {
     let caught: unknown = null;
     let data;
     try {
-      data = await active.analyzeSong(parsed.data, request.signal);
+      data = validateSongAnalysisForRequest(parsed.data, await active.analyzeSong(parsed.data, request.signal));
     } catch (error) {
       if (request.signal.aborted) return new Response(null, { status: 499 });
       caught = error;
       active = fallback;
-      data = await fallback.analyzeSong(parsed.data, request.signal);
+      try {
+        data = validateSongAnalysisForRequest(parsed.data, await fallback.analyzeSong(parsed.data, request.signal));
+      } catch {
+        return Response.json({ error: "The analyzer and its safe fallback could not produce a valid response." }, { status: 502 });
+      }
     }
 
     return Response.json({
@@ -75,4 +79,3 @@ export async function GET(): Promise<Response> {
     demoMode: resolved.service.provider === "mock",
   });
 }
-

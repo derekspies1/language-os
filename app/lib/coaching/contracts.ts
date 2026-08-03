@@ -151,14 +151,23 @@ export const CoachRequestSchema = z.discriminatedUnion("action", [
 
 export type CoachRequest = z.infer<typeof CoachRequestSchema>;
 
-export type CoachMeta = {
-  provider: ProviderName;
-  model: string;
-  demoMode: boolean;
-  responseTimeMs: number;
-  validationFailures: string[];
-  error: string | null;
-  liveProviderConfigured: boolean;
-};
+export const CoachMetaSchema = z.object({
+  provider: z.enum(["openai", "mock"]),
+  model: z.string().trim().min(1).max(160),
+  demoMode: z.boolean(),
+  responseTimeMs: z.number().nonnegative(),
+  validationFailures: z.array(z.string().max(200)).max(10),
+  error: z.string().max(1_000).nullable(),
+  liveProviderConfigured: z.boolean(),
+});
+
+export const ProviderStatusSchema = z.object({
+  provider: z.enum(["openai", "mock"]),
+  model: z.string().trim().min(1).max(160),
+  demoMode: z.boolean(),
+});
+
+export type CoachMeta = z.infer<typeof CoachMetaSchema>;
+export type ProviderStatus = z.infer<typeof ProviderStatusSchema>;
 
 export type CoachResponse<T> = { data: T; meta: CoachMeta };
