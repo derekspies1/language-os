@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import {
   type CoachMeta,
   type CoachingAnalysis,
@@ -202,7 +203,7 @@ export function LanguageSession() {
       <div className="atmosphere" aria-hidden="true" />
       <header className="topbar">
         <button className="brand" type="button" onClick={resetSession} aria-label="Start a new Language OS session"><span className="brand-mark">L/</span><span>LANGUAGE OS</span></button>
-        <div className={`provider-badge ${demoMode ? "demo" : "live"}`}><span /> {demoMode ? "DEMO COACH" : "LIVE COACH"}</div>
+        <div className="topbar-actions"><Link href="/repeat">K-POP REPEAT STUDIO →</Link><div className={`provider-badge ${demoMode ? "demo" : "live"}`}><span /> {demoMode ? "DEMO COACH" : "LIVE COACH"}</div></div>
       </header>
 
       <aside className="stage-rail" aria-label="Session progress">

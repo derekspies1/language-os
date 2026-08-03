@@ -25,7 +25,11 @@ export interface StructuredModelClient {
 export class OpenAIStructuredModelClient implements StructuredModelClient {
   private readonly client: OpenAI;
 
-  constructor(apiKey: string, private readonly model: string) {
+  constructor(
+    apiKey: string,
+    private readonly model: string,
+    private readonly systemPrompt = LANGUAGE_COACH_SYSTEM_PROMPT,
+  ) {
     this.client = new OpenAI({ apiKey });
   }
 
@@ -35,7 +39,7 @@ export class OpenAIStructuredModelClient implements StructuredModelClient {
         model: this.model,
         store: false,
         input: [
-          { role: "system", content: LANGUAGE_COACH_SYSTEM_PROMPT },
+          { role: "system", content: this.systemPrompt },
           { role: "user", content: prompt },
         ],
         text: { format: zodTextFormat(schema, schemaName) },
@@ -117,4 +121,3 @@ export class OpenAICoachingService implements CoachingService {
 export function createOpenAICoach(apiKey: string, model: string): OpenAICoachingService {
   return new OpenAICoachingService(model, new OpenAIStructuredModelClient(apiKey, model));
 }
-

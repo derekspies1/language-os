@@ -6,8 +6,8 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Language OS — Build what you want to say",
-  description: "A focused language training chamber built around guided struggle and real expression.",
+  title: { default: "Language OS — Build what you want to say", template: "%s · Language OS" },
+  description: "Meaningful Korean learning through guided struggle, progressive revelation, repeated listening, and real expression.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

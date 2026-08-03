@@ -40,7 +40,7 @@ test("validates complete coaching analysis and rejects incomplete output", async
 });
 
 test("selects demo coach when API configuration is missing", () => {
-  const resolved = resolveCoachingService({});
+  const resolved = resolveCoachingService({} as NodeJS.ProcessEnv);
   assert.equal(resolved.configuredLiveProvider, false);
   assert.equal(resolved.service.provider, "mock");
 });

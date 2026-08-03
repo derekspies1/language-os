@@ -70,11 +70,13 @@ export class MockCoachingService implements CoachingService {
   readonly provider = "mock" as const;
   readonly model = "language-os-demo-v1";
 
-  async analyzeAttempt(context: CoachingContext): Promise<CoachingAnalysis> {
+  async analyzeAttempt(context: CoachingContext, _signal?: AbortSignal): Promise<CoachingAnalysis> {
+    void _signal;
     return context.targetLanguage.code === "ko" ? koreanAnalysis : genericAnalysis(context);
   }
 
-  async evaluateRebuiltAttempt(_context: CoachingContext, rebuiltAttempt: string): Promise<RebuildEvaluation> {
+  async evaluateRebuiltAttempt(_context: CoachingContext, rebuiltAttempt: string, _signal?: AbortSignal): Promise<RebuildEvaluation> {
+    void _signal;
     return {
       progress: "The rebuilt attempt is more complete and ready to test in a new context.",
       communicatedMeaning: rebuiltAttempt.trim().length > 4,
@@ -83,7 +85,9 @@ export class MockCoachingService implements CoachingService {
     };
   }
 
-  async generateStressTestQuestions(context: CoachingContext): Promise<StressQuestions> {
+  async generateStressTestQuestions(context: CoachingContext, _rebuiltAttempt: string, _signal?: AbortSignal): Promise<StressQuestions> {
+    void _rebuiltAttempt;
+    void _signal;
     if (context.targetLanguage.code === "ko") return { questions: koreanQuestions };
     return {
       questions: [
@@ -93,7 +97,8 @@ export class MockCoachingService implements CoachingService {
     };
   }
 
-  async evaluateStressTestAnswer(_context: CoachingContext, _question: StressQuestion, answer: string): Promise<StressAnswerEvaluation> {
+  async evaluateStressTestAnswer(_context: CoachingContext, _question: StressQuestion, answer: string, _signal?: AbortSignal): Promise<StressAnswerEvaluation> {
+    void _signal;
     return {
       understood: answer.trim().length > 2,
       feedback: "Your answer reuses the new language in a fresh context.",
@@ -102,7 +107,9 @@ export class MockCoachingService implements CoachingService {
     };
   }
 
-  async createSessionSummary(context: CoachingContext, rebuiltAttempt: string): Promise<SessionSummary> {
+  async createSessionSummary(context: CoachingContext, rebuiltAttempt: string, _stressAnswers: string[], _signal?: AbortSignal): Promise<SessionSummary> {
+    void _stressAnswers;
+    void _signal;
     const analysis = context.targetLanguage.code === "ko" ? koreanAnalysis : genericAnalysis(context);
     return {
       capability: `Express the mission in ${context.targetLanguage.label} and reuse its core structure.`,

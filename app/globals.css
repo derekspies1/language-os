@@ -114,6 +114,9 @@ button { color: inherit; }
 
 .provider-badge.demo span { background: #e4b96b; box-shadow: 0 0 12px rgba(228,185,107,.55); }
 .provider-badge.live { color: #b8c0b9; }
+.topbar-actions { display: flex; gap: 25px; align-items: center; }
+.topbar-actions > a { color: var(--muted); font-family: var(--font-geist-mono), monospace; font-size: 9px; letter-spacing: .1em; text-decoration: none; }
+.topbar-actions > a:hover { color: var(--acid); }
 
 .stage-rail {
   z-index: 1;
@@ -429,6 +432,7 @@ footer {
   .topbar { position: sticky; top: 0; height: 62px; padding: 0 20px; }
   .stage-rail, footer { display: none; }
   .system-state, .provider-badge { font-size: 8px; }
+  .topbar-actions > a { display: none; }
   .work-area { display: block; padding: 24px 20px 70px; overflow: visible; }
   .mobile-progress { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; margin-bottom: 48px; color: var(--muted); font-family: var(--font-geist-mono), monospace; font-size: 8px; letter-spacing: .1em; text-transform: uppercase; }
   .mobile-progress div { height: 1px; background: var(--line); }
