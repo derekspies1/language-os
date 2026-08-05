@@ -90,6 +90,14 @@ Use lightweight states and understandable comparisons:
 
 Progress should be visible without fake precision, points, or false mastery claims.
 
+## Knowledge is a history of evidence
+
+Language knowledge is not a permanent flag. Preserve what the learner encountered, guessed, recognized, missed, recalled, and used, together with when, where, and through which modality it happened.
+
+One appearance proves exposure only. Reading recognition does not imply listening recognition; a learner-created sentence does not prove appropriate usage; a revealed answer does not prove recall. Derive understandable states from the underlying history and make those reasons inspectable.
+
+Normalization must preserve ambiguity. Keep separate meanings and useful forms, retain provenance for AI suggestions, and never silently merge or overwrite learner-confirmed history.
+
 ## Small, valuable output
 
 Output is essential, but every session should not become an exhausting test. Select a small number of items with high explanatory or reuse value.
@@ -133,4 +141,3 @@ Before shipping a learning interaction, ask:
 10. Can the learner return to real language with less scaffolding?
 
 If several answers are no, reconsider the interaction.
-

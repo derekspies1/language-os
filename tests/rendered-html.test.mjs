@@ -36,3 +36,12 @@ test("server-renders the Repeat Studio route and social metadata", async () => {
   assert.match(html, /Opening your listening room/);
   assert.match(html, /\/og\.png/);
 });
+
+test("server-renders the Learning Universe route", async () => {
+  const response = await render("/learn");
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /Learning Universe/);
+  assert.match(html, /Opening your learning universe/);
+  assert.match(html, /Local Memory Graph|evidence-backed language knowledge/i);
+});

@@ -4,10 +4,11 @@ Last verified: 2026-08-03
 
 ## Purpose
 
-Language OS is a browser-first language-learning prototype built around meaningful contact, productive struggle, progressive revelation, and reuse. It currently offers two complementary workflows:
+Language OS is a browser-first language-learning prototype built around meaningful contact, productive struggle, progressive revelation, reuse, and honest longitudinal evidence. It currently offers three complementary workflows:
 
 1. an expression coach that starts from something the learner genuinely wants to say; and
-2. K-pop Repeat Studio, which turns repeated listening to learner-supplied Korean lyrics into progressively deeper comprehension.
+2. K-pop Repeat Studio, which turns repeated listening to learner-supplied Korean lyrics into progressively deeper comprehension; and
+3. the Learning Universe, which exposes the durable Learner Memory Graph created by study activity.
 
 The durable product philosophy is defined in `docs/learning-principles.md`.
 
@@ -83,6 +84,16 @@ The 2026-08-03 senior product and code review corrected several behaviors that h
 - Full Song Breakdown now includes the song overview and close structural meaning;
 - understanding-map targets are larger and horizontally resilient, and the 820px breakpoint gives iPad portrait a full-width listening surface.
 
+### Learner Memory Graph
+
+Language OS now has a versioned, validated, device-local longitudinal learning record behind repository and service contracts.
+
+The graph provides stable learning-item, sense, relationship, and event identities; separate meanings and display-preserving form variants; provenance and confidence for suggested information; append-oriented source-linked evidence with dedupe keys; modality-specific strength; evidence-derived learner states; a transparent reinforcement heuristic; validated JSON/CSV export; version migration; and a privacy-bounded learner-context summary for future coaching.
+
+Repeat Studio is the first complete contributor. Validated analysis extracts and normalizes vocabulary, inflected forms, grammar patterns, and phrase candidates. Existing sessions backfill idempotently. Guesses, reveals, reading support, confusion marks, exact reconstruction, unscored meaning recall, personal reuse, and logged listens contribute evidence without turning every interaction into mastery.
+
+`/learn` provides the Learning Universe: search, language/item/state/modality filters, recent/new/durable/weak views, honest counts, encounter history, complete item detail, modality evidence, forms, senses, relationships, source contexts, notes, timelines, and export. Its demo preview is clearly labeled and not saved into the learner's real record.
+
 ## Current pages and workflows
 
 ### `/` — Expression coach
@@ -95,18 +106,26 @@ The learner can open the original demo, create a session from a pasted excerpt, 
 
 Creating a session immediately requests analysis. The learner can continue recording guesses while analysis loads, cancel without losing the session, or retry. Each later pass changes the study action rather than replaying the same screen. Later passes can update current understanding without erasing the initial state. The final pass restores a calm Korean-first lyric view, one suggested focus, and an explicit control for logging a completed listen.
 
+### `/learn` — Learning Universe
+
+The learner can explore everything currently in learner memory, inspect why each state was derived, compare modalities, trace source sessions, review suggested forms/senses/relationships, add notes, and export the record. It remains useful without an AI key and does not send the graph to a provider.
+
 ## Architecture
 
 - **Framework:** Next.js App Router components rendered through vinext/Vite for Cloudflare Worker-compatible output.
-- **UI:** React client components. The original coach and Repeat Studio are separate feature surfaces sharing the root visual variables and navigation.
-- **Validation:** Zod validates coaching requests, song-analysis requests, all model responses, and persisted Repeat Studio sessions.
+- **UI:** React client components. The expression coach, Repeat Studio, and Learning Universe are separate feature surfaces with connected navigation.
+- **Validation:** Zod validates coaching requests, song-analysis requests, all model responses, persisted Repeat Studio sessions, and the complete Learner Memory Graph.
 - **AI boundary:** Browser code calls server routes only. Provider credentials never enter client bundles or use public environment variable prefixes.
 - **Provider selection:** Server resolvers select OpenAI when `OPENAI_API_KEY` is present and deterministic mock services otherwise.
 - **Failure policy:** Live request failures and malformed structured output fall back per request to demo behavior. Metadata states which provider actually produced the response.
-- **Persistence:** Repeat Studio uses versioned browser `localStorage` because the product requirement is explicitly device-local sessions. D1 and R2 remain unused and unbound.
+- **Persistence:** Repeat Studio sessions and learner memory use separate versioned browser `localStorage` records. Learner memory is behind `LearnerMemoryRepository`; D1 and R2 remain unused because the app has no safe account/ownership boundary.
 - **Deployment target:** Cloudflare Worker via the existing vinext configuration and worker entry.
 
 ## Important contracts
+
+### Learner memory
+
+`LearnerMemoryRecordSchema` validates the item/sense/relationship/event graph and cross-record references. `LearnerContextSummarySchema` is the bounded future AI context contract. `LanguageNormalizationAdapter` is the language-specific identity extension point, and `LearnerMemoryRepository` is the storage-provider boundary.
 
 ### Coaching
 
@@ -151,6 +170,8 @@ On load:
 
 Sessions stay on the current browser/device. There is no cloud synchronization, account ownership, or server persistence.
 
+Learner memory stores a version-2 record under `language-os.learner-memory.graph`. Version-1 meanings migrate into explicit senses while notes, IDs, timestamps, and evidence are preserved. Invalid original bytes are preserved under `language-os.learner-memory.graph.recovery` before a new primary record is written. Unique dedupe keys prevent repeat renders, retries, and reopened analyses from inflating event history.
+
 ## Environment requirements
 
 - Node.js 22.13 or newer
@@ -173,6 +194,14 @@ The key must not use a `NEXT_PUBLIC_` prefix. `.env.example` is the canonical en
 - `app/lib/song-analysis/server/openai-song-analyzer.ts` — live song-analysis adapter and cross-line integrity checks
 - `app/api/song-analysis/route.ts` — song-analysis API validation and fallback
 - `app/lib/repeat-studio/session.ts` — session model, lyric splitting, persistence validation, and migration recovery
+- `app/lib/learner-memory/contracts.ts` — graph, event, state, and coaching-context schemas
+- `app/lib/learner-memory/normalization.ts` — stable identity and language adapters
+- `app/lib/learner-memory/repository.ts` — versioned persistence, recovery, and migrations
+- `app/lib/learner-memory/service.ts` — non-destructive merge, derived state, context selection, and export/import
+- `app/lib/learner-memory/repeat-integration.ts` — Repeat candidate extraction and evidence capture
+- `app/components/learning/LearningUniverse.tsx` — Learning Universe exploration and item detail
+- `docs/learner-memory-graph.md` — data model, heuristics, privacy, limitations, and roadmap
+- `tests/learner-memory.test.ts` — normalization, identity, evidence, state, export, context, and migration tests
 - `tests/coaching.test.ts` — original coaching behavior tests
 - `tests/repeat-studio.test.ts` — analysis, fallback, and persistence tests
 - `tests/rendered-html.test.mjs` — production worker route rendering tests
@@ -185,14 +214,23 @@ Verified on 2026-08-03:
 - `npx tsc --noEmit` — passed
 - `npm run lint` — passed
 - `npm run build` — passed
-- `npm test` — passed, 23 tests
+- `npm test` — passed, 35 tests
 
 The test command performs another production build before running tests.
 
 A manual browser walkthrough also passed in demo mode: session resume after reload, recoverable deletion, 81-line rejection, guess preservation, independent meaning/structure reveal, later-state improvement through Reusable, vocabulary and grammar marking, reconstruction feedback, reuse persistence, learner-logged listens, direct summary navigation, all four learning sheets, and browser-console inspection. Responsive checks at 1024×768 and 768×1024 found no page-level horizontal overflow; iPad portrait uses the compact pass rail and 40px understanding-map targets.
 
+The Learner Memory Graph browser pass also verified the empty and populated Learning Universe, search and state filters, item detail, the Repeat inline memory signal and drawer, confusion-event capture, route/reload persistence, demo-source provenance, JSON/CSV controls, desktop layout, and a 390×844 mobile viewport. No page-level horizontal overflow or browser-console errors were found.
+
 ## Known limitations
 
+- Learner memory is device-local and can be lost if browser storage is cleared without a JSON backup.
+- Browser local storage will not scale indefinitely; a larger local store or authenticated sync repository is a later phase.
+- Korean normalization is conservative and relies on validated analysis for lemmas; it is not a full morphological analyzer.
+- Line-level Repeat evidence currently fans out to every extracted item in that line. Exact item-scoped exercises are a later refinement.
+- Meaning recall and learner-created sentences are intentionally unevaluated unless stronger evidence exists.
+- Manual sense split/merge, duplicate review, relationship confirmation, import UI, and cloud sync are deferred.
+- The expression coach does not yet write memory events or consume the bounded learner-context summary.
 - Repeat Studio sessions are limited to one browser and can be lost if browser storage is cleared.
 - Local storage has browser-specific capacity limits; long lyrics and many analyzed sessions may eventually exceed them.
 - There is no editing flow for song metadata or lyrics after session creation. A changed excerpt currently requires a new session.
@@ -208,6 +246,8 @@ A manual browser walkthrough also passed in demo mode: session resume after relo
 ## Technical debt
 
 - `RepeatStudio.tsx` is a large vertical-slice component. Once behavior stabilizes, extracting mode and sheet components into feature-local modules would improve maintainability without changing the product.
+- Learner-memory and Repeat session stores validate and rewrite full local envelopes. IndexedDB or a batched repository will be preferable when history becomes large.
+- The reinforcement scheduler is a transparent interval heuristic, not a calibrated forgetting model.
 - Local persistence writes the validated session envelope after every state change. Debouncing writes may help for very large session libraries.
 - Stored analyses do not yet have a separate prompt/schema revision identifier for selective re-analysis.
 - There is no committed automated browser test for local storage, keyboard navigation, responsive layout, or print switching; those paths were manually exercised in this review but remain regression risks.
@@ -217,15 +257,15 @@ A manual browser walkthrough also passed in demo mode: session resume after relo
 
 ### Highest impact
 
-1. Add line-scoped conversational coaching grounded in the saved analysis and learner guess: “What did I misunderstand?”, “Would this sound natural outside a lyric?”, and “Help me use this about my life.”
-2. Add selective re-analysis and editable excerpts with analysis-version migration, so learners can refine a session without starting over.
-3. Add browser interaction coverage and richer rebuild evaluation, including Korean-aware answer normalization and optional validated live feedback.
+1. Add learner-controlled confirmation, correction, sense split, and non-destructive duplicate/merge review.
+2. Add exact item-scoped reconstruction and validated usage evaluation, then integrate the bounded learner context with coaching.
+3. Add selective re-analysis and editable excerpts with analysis-version migration, plus committed browser interaction coverage.
 
 ### Future possibilities, not current behavior
 
 - opt-in cloud synchronization and accounts;
-- spaced retrieval across songs;
-- import/export of learner-owned session records;
+- advanced spaced retrieval across songs;
+- spreadsheet and flashcard import with dry-run conflict review;
 - section labels such as verse, pre-chorus, and chorus;
 - learner-controlled analysis depth or line-scoped live analysis;
 - cross-song phrase and grammar collections;

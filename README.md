@@ -1,6 +1,6 @@
 # Language OS
 
-Language OS is a browser-first language-learning prototype for meaningful contact, productive struggle, progressive revelation, and reuse. It currently includes an expression coach and a complete K-pop Repeat Studio.
+Language OS is a browser-first language-learning prototype for meaningful contact, productive struggle, progressive revelation, reuse, and honest longitudinal memory. It includes an expression coach, K-pop Repeat Studio, and an evidence-backed Learning Universe.
 
 The durable product philosophy lives in [`docs/learning-principles.md`](docs/learning-principles.md). The verified implementation map lives in [`current_state.md`](current_state.md).
 
@@ -33,6 +33,12 @@ Paste a Korean song excerpt that you want to study, then move through five evolv
 
 Repeat Studio also includes device-local saved sessions, an original Korean demo, printable learning sheets, marked vocabulary and grammar, learner notes, recoverable deletion, and recovery from invalid or older saved data. Song entry accepts 1–80 non-empty lines and reports invalid or overlong input instead of truncating it.
 
+### Learning Universe — `/learn`
+
+Explore the living learner record created across study sessions. Search and filter normalized words, forms, expressions, and grammar; inspect separate meanings, relationships, source contexts, and the evidence timeline; compare listening, reading, recall, and production evidence; see honest reinforcement signals; and export the complete record as JSON or a readable CSV report.
+
+The graph never marks an item learned merely because it appeared. New, encountered, familiar, understood-in-context, recognizable, recallable, usable, and durable states are derived from inspectable evidence.
+
 ## Run locally
 
 Prerequisite: Node.js 22.13 or newer.
@@ -44,7 +50,7 @@ npm run dev
 
 Open the local URL printed in the terminal.
 
-Open `/repeat` for K-pop Repeat Studio. The expression coach at `/` links there as well.
+Open `/repeat` for K-pop Repeat Studio or `/learn` for the Learning Universe. The three surfaces link to one another.
 
 ## Configure live coaching
 
@@ -99,6 +105,16 @@ Repeat Studio adds:
 - `app/lib/repeat-studio/session.ts` for versioned local sessions, cross-field integrity checks, version-1 migration, and safe stored-data recovery.
 - `app/components/repeat/RepeatStudio.tsx` for the full learner workflow.
 
+The Learner Memory Graph adds:
+
+- `app/lib/learner-memory/contracts.ts` for versioned items, senses, relationships, evidence, derived states, and bounded coaching context;
+- `app/lib/learner-memory/normalization.ts` for deterministic stable identity and language adapters;
+- `app/lib/learner-memory/repository.ts` for replaceable browser and in-memory persistence implementations plus migration;
+- `app/lib/learner-memory/service.ts` for non-destructive upsert, evidence/state derivation, privacy-bounded context, and export/import;
+- `app/lib/learner-memory/repeat-integration.ts` for candidate extraction, idempotent encounter ingestion, and activity evidence;
+- `app/components/learning/LearningUniverse.tsx` and `/learn` for exploration and item detail; and
+- `docs/learner-memory-graph.md` for the complete architecture and heuristics.
+
 To add another AI provider, implement `CoachingService`, validate its outputs with the shared schemas, and update `resolveCoachingService`. The UI and API contract should not need provider-specific changes.
 
 Song-analysis providers follow the same pattern through `SongAnalysisService` and `resolveSongAnalysisService`.
@@ -107,7 +123,11 @@ Song-analysis providers follow the same pattern through `SongAnalysisService` an
 
 Repeat Studio studies text supplied by the learner. It does not retrieve lyrics, scrape lyric sites, control a streaming service, download audio, or process audio.
 
-Saved Repeat Studio sessions stay in browser local storage on the current device. Stored data uses schema version 2 and is validated for both shape and internal references before loading. Valid version-1 sessions preserve their learning record during migration; malformed sessions recover only safe core fields or are ignored with a visible warning. When live analysis is configured and requested, the pasted excerpt is sent to that configured AI provider through the server route. API keys remain server-side.
+Saved Repeat Studio sessions and the separate Learner Memory Graph stay in browser local storage on the current device. Both are versioned and validated before loading. Invalid learner-memory bytes are preserved under a recovery key rather than silently overwritten.
+
+When live analysis is configured and requested, the pasted excerpt is sent to that configured AI provider through the server route. The complete learner record is not sent. `LearnerContextSummarySchema` provides a deliberate future boundary that selects a small set of items and excludes source excerpts, event history, notes, and session IDs. API keys remain server-side.
+
+The memory persistence layer is intentionally device-local while Language OS has no account/ownership boundary and no configured D1 binding. It sits behind `LearnerMemoryRepository`, so a server-backed implementation can be added later without spreading database logic through UI components. Use **Complete JSON backup** in `/learn` for the canonical record or **Human-readable CSV** for a portable report.
 
 ## Checks
 
@@ -118,6 +138,6 @@ npm run build
 npm test
 ```
 
-`npm test` builds the production worker and runs 23 tests. It verifies both main routes, validates structured coaching and song-analysis responses at adapter and route boundaries, rejects changed Korean and invented segments, checks safe partial-output normalization, missing configuration, and fallback behavior, and exercises lyric limits, saved-session integrity, version migration, and interrupted-request recovery.
+`npm test` builds the production worker and verifies all three main routes. It validates structured coaching and song-analysis responses, fallback behavior, and saved-session recovery, then tests learner-memory normalization, sense separation, relationships, evidence deduplication, modality state, exports, privacy-bounded context, and migration.
 
-There is intentionally no authentication, account system, analytics, payments, or cloud persistence in this version. Expression-coach state resets on refresh; Repeat Studio sessions persist on the current device.
+There is intentionally no authentication, account system, analytics, payments, or cloud persistence in this version. Expression-coach state resets on refresh; Repeat Studio sessions and learner memory persist on the current device.
