@@ -45,3 +45,22 @@ test("server-renders the Learning Universe route", async () => {
   assert.match(html, /Opening your learning universe/);
   assert.match(html, /Local Memory Graph|evidence-backed language knowledge/i);
 });
+
+test("server-renders the Daily Exposure route", async () => {
+  const response = await render("/exposure");
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /<title>Daily Exposure/);
+  assert.match(html, /DAILY EXPOSURE/);
+  assert.match(html, /Opening today.s neighborhood/);
+  assert.match(html, /NO STREAKS · NO MASTERY SCORE/);
+});
+
+test("server-renders the learner-supplied Source Packs route", async () => {
+  const response = await render("/sources");
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /<title>Source Packs/);
+  assert.match(html, /SOURCE PACKS/);
+  assert.match(html, /Opening your source shelf/);
+});

@@ -23,7 +23,7 @@ import {
 } from "./normalization";
 import { mergeLearningItem, upsertLearningGraph } from "./service";
 
-type RepeatAnalysisInput = {
+export type LearningSourceAnalysisInput = {
   sessionId: string;
   title: string;
   artist: string;
@@ -32,6 +32,7 @@ type RepeatAnalysisInput = {
   analysis: SongAnalysis;
   analysisMeta: CoachMeta;
   language?: string;
+  sourceKind?: "repeat_studio" | "source_pack";
 };
 
 type ExtractedOccurrence = {
@@ -39,6 +40,7 @@ type ExtractedOccurrence = {
   senseId?: string;
   lineId: string;
   sourceExcerpt: string;
+  sourcePhrase: string;
   role: "lemma" | "form" | "grammar" | "expression";
 };
 
@@ -48,10 +50,10 @@ export type ExtractedRepeatGraph = {
   occurrences: ExtractedOccurrence[];
 };
 
-function provenance(input: RepeatAnalysisInput): Provenance {
+function provenance(input: LearningSourceAnalysisInput): Provenance {
   return {
     origin: input.analysisMeta.provider === "openai" ? "ai" : "system",
-    source: "repeat-studio-analysis",
+    source: input.sourceKind === "source_pack" ? "source-pack-analysis" : "repeat-studio-analysis",
     provider: input.analysisMeta.provider,
     model: input.analysisMeta.model,
     createdAt: input.startedAt,
@@ -189,18 +191,18 @@ function expressionItems(language: string, line: SongLineAnalysis, source: Prove
   });
 }
 
-export function extractRepeatLearningGraph(input: RepeatAnalysisInput): ExtractedRepeatGraph {
+export function extractRepeatLearningGraph(input: LearningSourceAnalysisInput): ExtractedRepeatGraph {
   const language = input.language ?? "ko";
   const source = provenance(input);
   const itemMap = new Map<string, LearningItem>();
   const relationshipMap = new Map<string, ItemRelationship>();
   const occurrences: ExtractedOccurrence[] = [];
 
-  function addItem(item: LearningItem, line: SongLineAnalysis, role: ExtractedOccurrence["role"]) {
+  function addItem(item: LearningItem, line: SongLineAnalysis, role: ExtractedOccurrence["role"], sourcePhrase = line.originalKorean) {
     const previous = itemMap.get(item.id);
     itemMap.set(item.id, previous ? mergeLearningItem(previous, item) : item);
     for (const sense of item.senses) {
-      occurrences.push({ itemId: item.id, senseId: sense.id, lineId: line.lineId, sourceExcerpt: line.originalKorean, role });
+      occurrences.push({ itemId: item.id, senseId: sense.id, lineId: line.lineId, sourceExcerpt: line.originalKorean, sourcePhrase, role });
     }
   }
 
@@ -224,21 +226,23 @@ export function extractRepeatLearningGraph(input: RepeatAnalysisInput): Extracte
     const lineItems: LearningItem[] = [];
     for (const vocabulary of line.vocabulary) {
       const { lemma, surface } = vocabularyItems(language, vocabulary, source, input.startedAt);
-      addItem(lemma, line, "lemma");
+      const phrase = line.segments.find((segment) => segment.text.includes(vocabulary.surfaceForm))?.text ?? line.originalKorean;
+      addItem(lemma, line, "lemma", phrase);
       lineItems.push(lemma);
       if (surface) {
-        addItem(surface, line, "form");
+        addItem(surface, line, "form", phrase);
         lineItems.push(surface);
         addRelationship(surface.id, "inflected_form_of", lemma.id, source.origin === "ai" ? 0.78 : 0.95);
       }
     }
     for (const grammar of line.grammar) {
       const item = grammarItem(language, grammar, source, input.startedAt);
-      addItem(item, line, "grammar");
+      const phrase = line.segments.find((segment) => segment.text.includes(grammar.formAsUsed))?.text ?? line.originalKorean;
+      addItem(item, line, "grammar", phrase);
       lineItems.push(item);
     }
     for (const expression of expressionItems(language, line, source, input.startedAt)) {
-      addItem(expression, line, "expression");
+      addItem(expression, line, "expression", expression.canonicalForm);
       const normalizedExpression = normalizeLearningForm(language, expression.type, expression.canonicalForm);
       for (const child of lineItems) {
         const comparableForm = child.forms.find((candidate) => normalizedExpression.includes(candidate.normalized))?.normalized ?? child.normalizedForm;
@@ -252,11 +256,12 @@ export function extractRepeatLearningGraph(input: RepeatAnalysisInput): Extracte
   return { items: [...itemMap.values()], relationships: [...relationshipMap.values()], occurrences };
 }
 
-export function ingestRepeatAnalysis(record: LearnerMemoryRecord, input: RepeatAnalysisInput): LearnerMemoryRecord {
+function ingestLearningSourceAnalysis(record: LearnerMemoryRecord, input: LearningSourceAnalysisInput): LearnerMemoryRecord {
   const graph = extractRepeatLearningGraph(input);
-  const sourceType = input.analysisMeta.demoMode ? "demo" as const : "repeat_studio" as const;
+  const sourceKind = input.sourceKind ?? "repeat_studio";
+  const sourceType = sourceKind === "source_pack" ? "source_pack" as const : input.analysisMeta.demoMode ? "demo" as const : "repeat_studio" as const;
   const events: LearningEvidenceEvent[] = graph.occurrences.map((occurrence) => {
-    const dedupeKey = `repeat-analysis:${input.sessionId}:${occurrence.lineId}:${occurrence.itemId}:${occurrence.senseId ?? "none"}`;
+    const dedupeKey = `${sourceKind}-analysis:${input.sessionId}:${occurrence.lineId}:${occurrence.itemId}:${occurrence.senseId ?? "none"}`;
     return {
       id: makeEvidenceId(dedupeKey),
       dedupeKey,
@@ -264,12 +269,12 @@ export function ingestRepeatAnalysis(record: LearnerMemoryRecord, input: RepeatA
       ...(occurrence.senseId ? { senseId: occurrence.senseId } : {}),
       type: "item_encountered",
       occurredAt: input.startedAt,
-      activityType: "repeat_studio_analysis",
+      activityType: sourceKind === "source_pack" ? "source_pack_analysis" : "repeat_studio_analysis",
       result: "not_evaluated",
       confidence: input.analysisMeta.provider === "openai" ? 0.78 : 0.92,
       context: {
         sessionId: input.sessionId,
-        sourceTitle: `${input.title} — ${input.artist}`,
+        sourceTitle: input.artist ? `${input.title} — ${input.artist}` : input.title,
         sourceType,
         sourceExcerpt: occurrence.sourceExcerpt,
         sourceReference: input.albumOrSource || undefined,
@@ -277,10 +282,18 @@ export function ingestRepeatAnalysis(record: LearnerMemoryRecord, input: RepeatA
       },
       aiGenerated: input.analysisMeta.provider === "openai",
       learnerConfirmed: false,
-      metadata: { candidateRole: occurrence.role, demoSource: input.analysisMeta.demoMode },
+      metadata: { candidateRole: occurrence.role, sourcePhrase: occurrence.sourcePhrase, demoSource: input.analysisMeta.demoMode },
     };
   });
   return upsertLearningGraph(record, { items: graph.items, relationships: graph.relationships, events });
+}
+
+export function ingestRepeatAnalysis(record: LearnerMemoryRecord, input: LearningSourceAnalysisInput): LearnerMemoryRecord {
+  return ingestLearningSourceAnalysis(record, { ...input, sourceKind: "repeat_studio" });
+}
+
+export function ingestSourcePackAnalysis(record: LearnerMemoryRecord, input: LearningSourceAnalysisInput): LearnerMemoryRecord {
+  return ingestLearningSourceAnalysis(record, { ...input, sourceKind: "source_pack" });
 }
 
 export function ingestRepeatSession(record: LearnerMemoryRecord, session: RepeatSession): LearnerMemoryRecord {

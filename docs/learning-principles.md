@@ -98,6 +98,24 @@ One appearance proves exposure only. Reading recognition does not imply listenin
 
 Normalization must preserve ambiguity. Keep separate meanings and useful forms, retain provenance for AI suggestions, and never silently merge or overwrite learner-confirmed history.
 
+## Modalities should meet without collapsing
+
+Reading and listening should reinforce one another while remaining separately measurable. A visually obvious word can still disappear in speech; a familiar sound can still have unstable spelling. Product decisions should expose useful gaps transparently:
+
+- strong reading with weak listening → listen before seeing text;
+- strong listening with weak reading → reveal and notice the written form;
+- both weak → pair short text and audio without claiming recognition;
+- both strengthening → return the item to a phrase; and
+- stable individual evidence → return language to its original source line.
+
+Audio playback proves contact only. Text reveal proves contact only. Recognition, meaning retrieval, and use require their own evidence.
+
+## Future visual exposure modality
+
+Visual or generated-video representation is a future modality, not part of the current Source Pack slice. A later system may pair concrete vocabulary with a tiny image, motion verbs with a brief animation, or abstract expressions with a memorable contextual scene.
+
+That modality should obey the same architecture: retain source and generation provenance, distinguish seeing a representation from recognizing or retrieving language, and append bounded visual-context evidence to the greater glossary. It must never overwrite the original source or become an uninspectable universal mastery signal.
+
 ## Small, valuable output
 
 Output is essential, but every session should not become an exhausting test. Select a small number of items with high explanatory or reuse value.

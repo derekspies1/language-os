@@ -164,7 +164,7 @@ export const EvidenceSourceContextSchema = z.object({
   sessionId: z.string().trim().max(120).optional(),
   lessonId: z.string().trim().max(120).optional(),
   sourceTitle: z.string().trim().max(240).optional(),
-  sourceType: z.enum(["repeat_studio", "expression_coach", "lesson", "review", "import", "demo", "other"]),
+  sourceType: z.enum(["repeat_studio", "source_pack", "daily_exposure", "expression_coach", "lesson", "review", "import", "demo", "other"]),
   sourceExcerpt: z.string().trim().max(2_000).optional(),
   sourceReference: z.string().trim().max(500).optional(),
   lineId: z.string().trim().max(120).optional(),
