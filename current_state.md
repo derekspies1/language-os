@@ -1,6 +1,19 @@
 # Current State
 
-Last updated: 2026-08-08
+Last updated: 2026-08-21
+
+## Implementation environment and accepted migration baseline
+
+- Derek PC is the primary Language OS implementation and validation workstation.
+- Native Windows is the canonical development environment.
+- GitHub is the authoritative source of code and history.
+- Mac Studio is retained as the rollback source and as the ambient architecture and Xcode environment.
+- The accepted migration branch is `codex/migration-preservation`.
+- The accepted migration commit is `6b5fd6f36c9635804feb685a14a1797cd6effa48`.
+- Root application and Even G2 clean install, lint/type-check where applicable, test, build, development-server, and simulator validation pass on Windows.
+- Repository portability acceptance does not replace physical Even G2 hardware validation. Hardware, firmware, phone-app, Prototype Mode, and R1 input validation remain separate acceptance work.
+
+This records the completed workstation transition only. It does not reorganize the product or client architecture.
 
 ## Product boundary
 
@@ -47,6 +60,7 @@ Language OS is the learner brain. Learner memory, vocabulary and grammar knowled
 ## Even G2 status
 
 - Language Glance V2 was physically validated on Even G2 and is useful enough to be an official client.
+- The current repository client passes clean install, tests, build, Vite serving, and Windows simulator automation on Derek PC. This validates repository portability, not current physical hardware behavior.
 - The validated interaction remains Korean → press → natural meaning → press → learner breakdown → press → next.
 - A local 20-item Korean deck remains the default offline fixture.
 - No Language OS storage, API, learner account, persistence, microphone, or AI provider is connected to the glasses client.
@@ -66,6 +80,7 @@ The mapping is experimental until a physical pass confirms that the Even Hub hos
 Core:
 
 ```bash
+npm ci
 npm run lint
 npx tsc --noEmit
 npm test
@@ -73,13 +88,13 @@ npm test
 
 ## Current Git safety note
 
-Central Language OS work and the pre-existing G2 client changes remain uncommitted together on `feature/even-g2-client`. A branch switch would carry the same mixed working tree rather than separate it. Do not reset or destructively split it; review and commit the central and client scopes intentionally before branching further.
+The accepted portable baseline is commit `6b5fd6f36c9635804feb685a14a1797cd6effa48` on `codex/migration-preservation`, with GitHub as the authoritative remote history. This acceptance does not imply a merge to `main`; architecture changes and future feature work remain separate decisions.
 
 G2 client:
 
 ```bash
 cd clients/even-g2
-npm install
+npm ci
 npm test
 npm run build
 npm run pack
