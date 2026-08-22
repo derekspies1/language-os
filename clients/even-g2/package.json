@@ -1,0 +1,28 @@
+{
+  "name": "@language-os/even-g2",
+  "private": true,
+  "version": "0.3.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "preview": "vite preview",
+    "pack": "npm run build && evenhub pack app.json dist -o language-os-even-g2.ehpk",
+    "simulate": "node node_modules/@evenrealities/evenhub-simulator/bin/index.js http://localhost:5173",
+    "simulate:automation": "node node_modules/@evenrealities/evenhub-simulator/bin/index.js http://localhost:5173 --automation-port 9898"
+  },
+  "dependencies": {
+    "@evenrealities/even_hub_sdk": "0.0.12"
+  },
+  "devDependencies": {
+    "@evenrealities/evenhub-cli": "0.1.13",
+    "@evenrealities/evenhub-simulator": "0.8.0",
+    "tsx": "4.23.1",
+    "typescript": "5.9.3",
+    "vite": "8.2.1"
+  },
+  "optionalDependencies": {
+    "@evenrealities/sim-darwin-arm64": "0.8.0"
+  }
+}

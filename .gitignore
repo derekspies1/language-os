@@ -42,3 +42,9 @@ next-env.d.ts
 /.wrangler/
 /outputs/
 /work/
+
+# independently managed wearable clients
+/clients/even-g2/node_modules/
+/clients/even-g2/dist/
+/clients/even-g2/*.ehpk
+/clients/even-g2/simulator-artifacts/
