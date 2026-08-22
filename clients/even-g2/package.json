@@ -21,8 +21,5 @@
     "tsx": "4.23.1",
     "typescript": "5.9.3",
     "vite": "8.2.1"
-  },
-  "optionalDependencies": {
-    "@evenrealities/sim-darwin-arm64": "0.8.0"
   }
 }

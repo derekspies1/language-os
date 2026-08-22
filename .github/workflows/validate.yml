@@ -1,0 +1,53 @@
+name: Validate
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - windows-latest
+          - macos-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            clients/even-g2/package-lock.json
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Lint root application
+        run: npm run lint
+
+      - name: Type-check root application
+        run: npx tsc --noEmit
+
+      - name: Test root application
+        run: npm test
+
+      - name: Install G2 dependencies
+        working-directory: clients/even-g2
+        run: npm ci
+
+      - name: Test G2 client
+        working-directory: clients/even-g2
+        run: npm test
+
+      - name: Build G2 client
+        working-directory: clients/even-g2
+        run: npm run build

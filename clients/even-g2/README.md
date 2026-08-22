@@ -39,9 +39,11 @@ This mapping is not final until physical testing confirms reliable source attrib
 
 Prerequisites: Node.js 20 LTS or Node.js 22+, npm, and (for hardware) current G2 firmware and the Even Realities phone app.
 
+From the Language OS repository root:
+
 ```bash
-cd /Users/derekspies/Projects/language-os/clients/even-g2
-npm install
+cd clients/even-g2
+npm ci
 npm test
 npm run build
 ```
@@ -53,12 +55,12 @@ The client owns its package manifest, lockfile, TypeScript configuration, Vite c
 Open two terminals:
 
 ```bash
-cd /Users/derekspies/Projects/language-os/clients/even-g2
+cd clients/even-g2
 npm run dev
 ```
 
 ```bash
-cd /Users/derekspies/Projects/language-os/clients/even-g2
+cd clients/even-g2
 npm run simulate
 ```
 
@@ -94,14 +96,14 @@ The simulator is a layout and logic check, not a substitute for physical validat
 3. Start Vite:
 
    ```bash
-   cd /Users/derekspies/Projects/language-os/clients/even-g2
+   cd clients/even-g2
    npm run dev
    ```
 
 4. Copy the LAN `Network` URL printed by Vite. In a second terminal, generate its QR code:
 
    ```bash
-   cd /Users/derekspies/Projects/language-os/clients/even-g2
+   cd clients/even-g2
    npx evenhub qr --url "http://<your-lan-ip>:5173"
    ```
 
@@ -113,7 +115,7 @@ The phone and computer must share a LAN. If the QR scans but loading fails, chec
 ## Package an EHPK
 
 ```bash
-cd /Users/derekspies/Projects/language-os/clients/even-g2
+cd clients/even-g2
 npm run pack
 ```
 

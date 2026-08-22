@@ -49,10 +49,10 @@ The current repository is versioned browser `localStorage`. This is deliberate w
 
 ## Run locally
 
-Prerequisite: Node.js 22.13 or newer.
+Prerequisite: Node.js 22.13 or newer. The repository's `.node-version` records Node.js 24.19.0 as the validated workstation and CI version, and `package.json` records npm 11.17.0.
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
@@ -64,11 +64,20 @@ Useful routes:
 - `/sources` — learner-supplied Source Packs
 - `/learn` — Learning Universe
 - `/repeat` — K-pop Repeat Studio
+- `/song-study` — local song study workspace
 - `/` — expression coach
 
 ## Configure live coaching
 
-Copy the example environment file and add a server-side API key:
+Copy the example environment file and add a server-side API key.
+
+PowerShell:
+
+```powershell
+Copy-Item .env.example .env.local
+```
+
+Bash:
 
 ```bash
 cp .env.example .env.local
@@ -82,6 +91,10 @@ OPENAI_MODEL=gpt-5-mini
 ```
 
 Restart `npm run dev` after changing environment variables. The key is read only inside the server route and must never use a `NEXT_PUBLIC_` prefix.
+
+## Known Windows development issue
+
+Vinext 0.0.50 may print an implausibly large compile duration for a successful development request on Windows. This is a non-blocking logging anomaly: verify the HTTP status and rendered route rather than using that duration as a startup-health signal.
 
 ## Configure Korean pronunciation
 
@@ -132,7 +145,7 @@ The G2 client is intentionally independent from the web application toolchain:
 
 ```bash
 cd clients/even-g2
-npm install
+npm ci
 npm test
 npm run build
 ```
