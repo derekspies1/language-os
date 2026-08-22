@@ -200,6 +200,9 @@ export function RepeatStudio() {
         </button>
         <nav aria-label="Product navigation">
           <Link href="/">Expression coach</Link>
+          <Link href="/song-study">Song Study</Link>
+          <Link href="/sources">Source Packs</Link>
+          <Link href="/exposure">Daily exposure</Link>
           <Link href="/learn">Learning universe</Link>
           {active && <button type="button" onClick={() => openSheets()}>Learning sheets</button>}
           <span className={`repeat-provider ${analysisMode}`}><i />{analysisMode === "checking" ? "CHECKING MODE" : analysisMode === "demo" ? "DEMO ANALYSIS" : "LIVE ANALYSIS"}</span>

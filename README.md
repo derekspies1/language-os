@@ -1,14 +1,8 @@
 # Language OS
 
-Language OS is a browser-first language-learning prototype for meaningful contact, productive struggle, progressive revelation, reuse, and honest longitudinal memory. It includes an expression coach, K-pop Repeat Studio, and an evidence-backed Learning Universe.
+Language OS is a focused language-learning prototype built around one idea: real desire should drive contact with language, and contact should become evidence rather than a score. Its connected surfaces are the expression coach, learner-supplied Source Packs, Daily Exposure, K-pop Repeat Studio, and the shared Learning Universe.
 
-The durable product philosophy lives in [`docs/learning-principles.md`](docs/learning-principles.md). The verified implementation map lives in [`current_state.md`](current_state.md).
-
-## Product workflows
-
-### Expression coach — `/`
-
-Try to express something real before receiving the language for it. A session moves from an authentic mission through an imperfect first attempt, progressive coaching, reconstruction, a short transfer test, and a capability-focused summary.
+The repository also contains official thin clients. The Even Realities G2 client lives in [`clients/even-g2`](clients/even-g2) and consumes a typed learning-feed boundary; it does not import learner storage or domain internals.
 
 ## Learning flow
 
@@ -21,23 +15,37 @@ Try to express something real before receiving the language for it. A session mo
 
 The UI never receives all hints at once. The server can prepare a complete analysis, but the learner explicitly reveals each level before rebuilding.
 
-### K-pop Repeat Studio — `/repeat`
+## Daily Exposure Loop
 
-Paste a Korean song excerpt that you want to study, then move through five evolving listening passes:
+Open `/exposure` to learn from one ready Source Pack or turn a lightweight intention into a Korean-first set of 12 useful words. Source mode deliberately stays inside the selected source; it does not mix generic K-pop, LCK, or exploratory vocabulary into a song the learner explicitly wants to whittle down.
 
-1. Listen and guess before revealing the answer.
-2. Unpack segmentation, vocabulary, grammar, nuance, and sound progressively.
-3. Return to a cleaner view and hear complete meaningful units.
-4. Rebuild and reuse a small number of high-value trouble spots.
-5. Return to the song with a compact understanding map, one next-listen focus, and an explicit learner-logged listen.
+The selector transparently mixes:
 
-Repeat Studio also includes device-local saved sessions, an original Korean demo, printable learning sheets, marked vocabulary and grammar, learner notes, recoverable deletion, and recovery from invalid or older saved data. Song entry accepts 1–80 non-empty lines and reports invalid or overlong input instead of truncating it.
+- words related to the current interest;
+- previous weak encounters;
+- familiar items worth reinforcing;
+- useful neighbors of known language; and
+- a small amount of new exploration.
 
-### Learning Universe — `/learn`
+The first pass may be reading-first or listening-first. Reading-first shows Korean and can immediately play the word, a tiny phrase, or its short source line. Listening-first hides the Korean until the learner records **Recognized it**, **Familiar sound**, or **Didn’t catch it**. Meaning and source context remain optional reveals. The set then stays open until the learner chooses **Close today’s loop** and reports what survived as **Got it**, **Almost**, or **Didn’t stick**.
 
-Explore the living learner record created across study sessions. Search and filter normalized words, forms, expressions, and grammar; inspect separate meanings, relationships, source contexts, and the evidence timeline; compare listening, reading, recall, and production evidence; see honest reinforcement signals; and export the complete record as JSON or a readable CSV report.
+Audio playback, Korean text reveal, meaning reveal, reading recognition, listening recognition, and free recall append distinct evidence. They never create a mastery percentage, streak, or permanent grade.
 
-The graph never marks an item learned merely because it appeared. New, encountered, familiar, understood-in-context, recognizable, recallable, usable, and durable states are derived from inspectable evidence.
+## Source Packs
+
+Open `/sources` and paste Korean lyrics or text you already have. A Source Pack stores the title, optional artist/context, exact learner-supplied lines, validated structured analysis, and provider metadata locally.
+
+The existing song-analysis infrastructure identifies line units, useful vocabulary, surface forms, grammar patterns, and expressions. Those units enter the same Learner Memory Graph as Repeat Studio using stable IDs. Source and line provenance remain attached to every occurrence, so the same Korean item can accumulate evidence across multiple sources without becoming duplicate vocabulary.
+
+Without `OPENAI_API_KEY`, Source Packs preserve each supplied line as a safe phrase unit and do not invent meanings. With the existing live analyzer configured, they produce detailed validated items and meanings.
+
+The source detail view reports grounded counts—items mapped, recognizable while reading, recognizable by sound, weak across a modality, phrases becoming understandable, and recently strengthened—without collapsing them into a percentage.
+
+## Learner Memory Graph
+
+Open `/learn` to inspect the shared evidence record. It stores typed items, forms, senses, relationships, source-linked events, modality-specific strength, and explainable derived states. The graph is documented in [`docs/learner-memory-graph.md`](docs/learner-memory-graph.md), and the product rules behind it are in [`docs/learning-principles.md`](docs/learning-principles.md).
+
+The current repository is versioned browser `localStorage`. This is deliberate while Language OS has no learner identity: it provides durable local sessions without inventing an unsafe shared server identity. It does not sync between browsers. JSON export from the Learning Universe is the current backup format.
 
 ## Run locally
 
@@ -50,7 +58,13 @@ npm run dev
 
 Open the local URL printed in the terminal.
 
-Open `/repeat` for K-pop Repeat Studio or `/learn` for the Learning Universe. The three surfaces link to one another.
+Useful routes:
+
+- `/exposure` — Daily Exposure Loop
+- `/sources` — learner-supplied Source Packs
+- `/learn` — Learning Universe
+- `/repeat` — K-pop Repeat Studio
+- `/` — expression coach
 
 ## Configure live coaching
 
@@ -69,6 +83,18 @@ OPENAI_MODEL=gpt-5-mini
 
 Restart `npm run dev` after changing environment variables. The key is read only inside the server route and must never use a `NEXT_PUBLIC_` prefix.
 
+## Configure Korean pronunciation
+
+ElevenLabs pronunciation is optional and server-side:
+
+```bash
+ELEVENLABS_API_KEY=your_api_key_here
+ELEVENLABS_VOICE_ID=your_korean_tested_voice_id
+ELEVENLABS_MODEL=eleven_multilingual_v2
+```
+
+`ELEVENLABS_VOICE_ID` defaults to the voice used in ElevenLabs’ official API example, but production should select and physically test a multilingual voice for Korean. Audio uses the official Text to Speech endpoint, returns MP3, and is reused through a bounded server cache plus the browser Cache API. When the key is absent or the provider fails, the exposure loop continues and the audio control explains that pronunciation is unavailable.
+
 To verify the live coach:
 
 1. Confirm the top-right badge says **LIVE COACH**.
@@ -76,15 +102,11 @@ To verify the live coach:
 3. Confirm the scaffolding refers specifically to that mission and attempt.
 4. In development, expand **Development diagnostics** to see the provider, model, request state, response time, validation fields, and sanitized error state.
 
-## Live analysis, demo mode, and fallback
+## Demo mode and fallback
 
 When `OPENAI_API_KEY` is absent, Language OS automatically uses the deterministic mock coach and labels the interface **DEMO COACH**. If a configured live request fails or returns malformed structured output, that individual request falls back to the same mock coach. Attempts remain in browser state, and diagnostics show only sanitized failure information—never the key, raw model response, or hidden system prompt.
 
-The expression coach's Korean demo path is complete. Other target languages receive generic demo guidance; live mode generates mission-specific coaching for all listed languages.
-
-Repeat Studio includes original Korean demo material written specifically for Language OS. In demo mode, that material has a complete structured breakdown. Learner-supplied text remains fully usable for listening, guessing, marking, notes, and reuse, but the demo analyzer deliberately does not invent detailed meanings or grammar. A configured live provider can create the validated breakdown.
-
-The interface always identifies whether the actual result came from live or demo analysis. A failed live request falls back per request and is never disguised as live output.
+The Korean demo path is complete. Other target languages receive generic demo guidance; live mode generates mission-specific coaching for all listed languages.
 
 ## Coaching architecture
 
@@ -96,48 +118,25 @@ The interface always identifies whether the actual result came from live or demo
 - `app/api/coach/route.ts` validates requests, runs coaching operations, sanitizes diagnostics, and performs fallback.
 - `app/components/LanguageSession.tsx` owns session state, progressive disclosure, loading, cancellation, retry, and development diagnostics.
 
-Repeat Studio adds:
-
-- `app/lib/song-analysis/contracts.ts` for validated song, line, vocabulary, and grammar analysis.
-- `app/lib/song-analysis/server/openai-song-analyzer.ts` for the live provider adapter and source-line integrity checks.
-- `app/lib/song-analysis/demo.ts` for original demo material and conservative fallback.
-- `app/api/song-analysis/route.ts` for server-side validation, cancellation, live execution, and labeled fallback.
-- `app/lib/repeat-studio/session.ts` for versioned local sessions, cross-field integrity checks, version-1 migration, and safe stored-data recovery.
-- `app/components/repeat/RepeatStudio.tsx` for the full learner workflow.
-
-The Learner Memory Graph adds:
-
-- `app/lib/learner-memory/contracts.ts` for versioned items, senses, relationships, evidence, derived states, and bounded coaching context;
-- `app/lib/learner-memory/normalization.ts` for deterministic stable identity and language adapters;
-- `app/lib/learner-memory/repository.ts` for replaceable browser and in-memory persistence implementations plus migration;
-- `app/lib/learner-memory/service.ts` for non-destructive upsert, evidence/state derivation, privacy-bounded context, and export/import;
-- `app/lib/learner-memory/repeat-integration.ts` for candidate extraction, idempotent encounter ingestion, and activity evidence;
-- `app/components/learning/LearningUniverse.tsx` and `/learn` for exploration and item detail; and
-- `docs/learner-memory-graph.md` for the complete architecture and heuristics.
-
 To add another AI provider, implement `CoachingService`, validate its outputs with the shared schemas, and update `resolveCoachingService`. The UI and API contract should not need provider-specific changes.
-
-Song-analysis providers follow the same pattern through `SongAnalysisService` and `resolveSongAnalysisService`.
-
-## Privacy, copyright, and persistence
-
-Repeat Studio studies text supplied by the learner. It does not retrieve lyrics, scrape lyric sites, control a streaming service, download audio, or process audio.
-
-Saved Repeat Studio sessions and the separate Learner Memory Graph stay in browser local storage on the current device. Both are versioned and validated before loading. Invalid learner-memory bytes are preserved under a recovery key rather than silently overwritten.
-
-When live analysis is configured and requested, the pasted excerpt is sent to that configured AI provider through the server route. The complete learner record is not sent. `LearnerContextSummarySchema` provides a deliberate future boundary that selects a small set of items and excludes source excerpts, event history, notes, and session IDs. API keys remain server-side.
-
-The memory persistence layer is intentionally device-local while Language OS has no account/ownership boundary and no configured D1 binding. It sits behind `LearnerMemoryRepository`, so a server-backed implementation can be added later without spreading database logic through UI components. Use **Complete JSON backup** in `/learn` for the canonical record or **Human-readable CSV** for a portable report.
 
 ## Checks
 
 ```bash
-npx tsc --noEmit
 npm run lint
 npm run build
 npm test
 ```
 
-`npm test` builds the production worker and verifies all three main routes. It validates structured coaching and song-analysis responses, fallback behavior, and saved-session recovery, then tests learner-memory normalization, sense separation, relationships, evidence deduplication, modality state, exports, privacy-bounded context, and migration.
+The G2 client is intentionally independent from the web application toolchain:
 
-There is intentionally no authentication, account system, analytics, payments, or cloud persistence in this version. Expression-coach state resets on refresh; Repeat Studio sessions and learner memory persist on the current device.
+```bash
+cd clients/even-g2
+npm install
+npm test
+npm run build
+```
+
+`npm test` builds the production worker, verifies all primary routes render, validates structured coaching and fallback behavior, exercises learner-memory derivation and migration, and checks Source Pack provenance, source-only selection, separate reading/listening evidence, pronunciation fallback/caching, Daily Exposure loop closure, and persistence.
+
+There is intentionally no authentication, account system, analytics, payments, or external persistence in this version. Learner memory, learner-supplied Source Packs, Repeat sessions, browser-cached pronunciation, and unfinished Daily Exposure sets persist on the current device; the expression-coach session remains transient.

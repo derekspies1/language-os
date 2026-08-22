@@ -74,7 +74,7 @@ export function LearningUniverse() {
   return <main className="universe-app">
     <header className="universe-topbar">
       <Link className="universe-brand" href="/"><span>L/</span><div><b>LANGUAGE OS</b><small>LEARNING UNIVERSE</small></div></Link>
-      <nav><Link href="/repeat">Repeat Studio</Link><Link href="/">Expression coach</Link><span>LOCAL MEMORY · PRIVATE BY DEFAULT</span></nav>
+      <nav><Link href="/song-study">Song Study</Link><Link href="/sources">Source Packs</Link><Link href="/exposure">Daily exposure</Link><Link href="/repeat">Repeat Studio</Link><Link href="/">Expression coach</Link><span>LOCAL MEMORY · PRIVATE BY DEFAULT</span></nav>
     </header>
 
     {memory.warning && <div className="universe-warning" role="status"><span>{memory.warning}</span><button type="button" onClick={memory.dismissWarning}>Dismiss</button></div>}
@@ -123,7 +123,7 @@ export function LearningUniverse() {
 }
 
 function EmptyUniverse({ onPreview }: { onPreview: () => void }) {
-  return <section className="empty-universe"><div><p>아직 첫 별이 뜨기 전</p><h1>Your universe begins<br />with real contact.</h1><p>Analyze an excerpt in Repeat Studio. Language OS will normalize its words, forms, grammar, and expressions, then preserve evidence as you guess, reveal, listen, rebuild, and reuse.</p><div><Link href="/repeat">Begin in Repeat Studio <span>→</span></Link><button type="button" onClick={onPreview}>Preview a clearly labeled demo universe</button></div></div><aside><span>WHAT WILL APPEAR HERE</span><ul><li>Items and separate meanings</li><li>Reading and listening evidence</li><li>Recall and personal-use attempts</li><li>Source-linked history</li><li>Relationships and confusions</li></ul><small>Your record stays in this browser and is not sent to an AI provider by default.</small></aside></section>;
+  return <section className="empty-universe"><div><p>아직 첫 별이 뜨기 전</p><h1>Your universe begins<br />with real contact.</h1><p>Paste Korean you already care about into a Source Pack, begin a small exposure set, or analyze an excerpt in Repeat Studio. Language OS preserves what you saw, heard, revealed, recognized, retrieved, rebuilt, and reused.</p><div><Link href="/sources">Create a Source Pack <span>→</span></Link><Link href="/exposure">Open Daily Exposure</Link><button type="button" onClick={onPreview}>Preview a clearly labeled demo universe</button></div></div><aside><span>WHAT WILL APPEAR HERE</span><ul><li>Items and separate meanings</li><li>Reading and listening evidence</li><li>Recall and personal-use attempts</li><li>Source-linked history</li><li>Relationships and confusions</li></ul><small>Your record stays in this browser and is not sent to an AI provider by default.</small></aside></section>;
 }
 
 function Metric({ value, label, tone }: { value: number; label: string; tone?: string }) {
