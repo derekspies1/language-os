@@ -2,6 +2,10 @@
 
 Language OS is a focused language-learning prototype built around one idea: try to express something real before receiving the language for it. A session moves from an authentic mission through an imperfect first attempt, progressive coaching, reconstruction, a short transfer test, and a capability-focused summary.
 
+## Meaning Bridge experiment
+
+The standalone [Meaning Bridge prototype](experiments/meaning-bridge/README.md) tests a Korean → English meaning → Korean replay loop with local video, YouTube URLs, or a built-in speech sample. It runs independently from the main Language OS app.
+
 ## Learning flow
 
 1. Choose a real mission and target language.

@@ -1,0 +1,9 @@
+[
+  { "id": "u1", "start": 0, "end": 2.6, "korean": "안녕하세요. 저는 지민이에요.", "english": "Hello. I'm Jimin." },
+  { "id": "u2", "start": 2.8, "end": 5.2, "korean": "오늘은 날씨가 정말 좋네요.", "english": "The weather is really nice today." },
+  { "id": "u3", "start": 5.4, "end": 8.2, "korean": "우리 같이 산책할까요?", "english": "Shall we go for a walk together?" },
+  { "id": "u4", "start": 8.4, "end": 11.3, "korean": "좋아요. 어디로 가고 싶어요?", "english": "Sounds good. Where do you want to go?" },
+  { "id": "u5", "start": 11.5, "end": 14.3, "korean": "저는 가까운 공원에 가고 싶어요.", "english": "I want to go to the nearby park." },
+  { "id": "u6", "start": 14.5, "end": 17.3, "korean": "그럼 지금 출발해요.", "english": "Then let's leave now." },
+  { "id": "u7", "start": 17.5, "end": 20.4, "korean": "잠깐만요. 물을 가져올게요.", "english": "Wait a moment. I'll bring some water." }
+]
